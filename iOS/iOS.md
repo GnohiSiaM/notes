@@ -50,6 +50,46 @@ Command | Control | Option (alt) | Shift | Caps Lock | Enter | Click
 
 ---
 
+在函数分组和 protocol/delegate 实现中使用 `#pragma mark -` 来分类方法，要遵循以下一般结构：
+```objective-c
+#pragma mark - Lifecycle
+- (instancetype)init {}
+- (void)dealloc {}
+- (void)viewDidLoad {}
+- (void)viewWillAppear:(BOOL)animated {}
+- (void)didReceiveMemoryWarning {}
+
+#pragma mark - Custom Accessors
+- (void)setCustomProperty:(id)value {}
+- (id)customProperty {}
+
+#pragma mark - IBActions
+- (IBAction)submitData:(id)sender {}
+
+#pragma mark - Public Methods
+- (void)publicMethod {}
+
+#pragma mark - Private Methods
+- (void)privateMethod {}
+
+#pragma mark - Protocol conformance
+#pragma mark - UITextFieldDelegate
+#pragma mark - UITableViewDataSource
+#pragma mark - UITableViewDelegate
+
+#pragma mark - NSCopying
+- (id)copyWithZone:(NSZone *)zone {}
+
+#pragma mark - NSObject
+- (NSString *)description {}
+```
+
+---
+
+`__weak  __typeof(&*self) weakSelf = self;`
+
+---
+
 多使用字面量语法，但有限制：除了字符串以外，所创建出来的对象必须属于`Foundation`框架。
 使用字面量语法创建的对象都是不可变的(immutable)。
 
@@ -73,10 +113,42 @@ static const NSTimeInterval kAnimationDuration = 0.3;
 全局符号表(global symbol table)：全局常量必须定义且只能定义一次
 ```objective-c
 // In the header file
-    extern NSString *const AGStringConstant;
+extern NSString *const AGStringConstant;
 // In the implementation file
-    NSString *const AGStringConstant = @"value";
+NSString *const AGStringConstant = @"value";
 ```
+
+---
+
+iOS查看crash log:
+
+1. 拿到crash文件（可以通过itunes同步，并在`~/Library/Logs/CrashReporter/MobileDevice`下拿到相关crash文件）
+2. 拿到`xxx.app`以及`xxx.app.dSYM`文件（直接选中Xcode的.app文件右击show in finder找到）
+3. 找到symbolicatecrash文件放到和 2 的文件相同目录(通过命令找到：`find /Applications/Xcode.app -name symbolicatecrash -type f` )
+4. `export DEVELOPER_DIR="/Applications/XCode.app/Contents/Developer"`
+5. 切换到app文件夹下执行如下命令：`./symbolicatecrash xxx_2015-01-04-145029_Xxx-iPhone6.crash xxx.app.dSYM > iphone6.crash`
+6. 这样就拿到了iphone6.crash的转换后的文件了。
+
+---
+
+每当点击一下 iOS 设备的屏幕，`UIKit`就会把触摸事件被封装成一个`UIEvent`对象，
+然后把 `Event` 分发给当前 active 的 APP，`UIApplication` 单例会从事件队列中去取最新的事件，传给 `UIWindow` 的 `rootViewController`，调用 `rootViewController.view` 的所有 `subviews` 的 `hitTest:event:` 方法，哪个 `view` 的 `hitTest:event` 方法返回非 `nil` 值，则触摸事件就交给该 `view` 处理。
+
+---
+
+视图的生命周期:
+```objective-c
+init  -->
+loadView  -->
+viewDidLoad  -->
+viewWillAppear  -->
+viewDidAppear  -->
+viewWillDisappear  -->
+viewDidDisappear  -- (此时视图已消失了，当模拟内存警告的时候) -->
+viewWillUnload  -->
+viewDidUnload
+```
+视图控制对象通过`alloc`和`init`来创建，但是视图控制对象不会在创建的那一刻就马上创建相应的视图，而是等到需要使用的时候才通过调用`loadView`来创建.
 
 ---
 
@@ -110,33 +182,6 @@ iOS使用同步锁的开销较大，会严重影响性能，所以一般使用`n
 
 ---
 
-iOS查看crash log:
-
-1. 拿到crash文件（可以通过itunes同步，并在`~/Library/Logs/CrashReporter/MobileDevice`下拿到相关crash文件）
-2. 拿到`xxx.app`以及`xxx.app.dSYM`文件（直接选中Xcode的.app文件右击show in finder找到）
-3. 找到symbolicatecrash文件放到和 2 的文件相同目录(通过命令找到：`find /Applications/Xcode.app -name symbolicatecrash -type f` )
-4. `export DEVELOPER_DIR="/Applications/XCode.app/Contents/Developer"`
-5. 切换到app文件夹下执行如下命令：`./symbolicatecrash xxx_2015-01-04-145029_Xxx-iPhone6.crash xxx.app.dSYM > iphone6.crash`
-6. 这样就拿到了iphone6.crash的转换后的文件了。
-
----
-
-视图的生命周期:
-```objective-c
-init  -->
-loadView  -->
-viewDidLoad  -->
-viewWillAppear  -->
-viewDidAppear  -->
-viewWillDisappear  -->
-viewDidDisappear  -- (此时视图已消失了，当模拟内存警告的时候) -->
-viewWillUnload  -->
-viewDidUnload
-```
-视图控制对象通过`alloc`和`init`来创建，但是视图控制对象不会在创建的那一刻就马上创建相应的视图，而是等到需要使用的时候才通过调用`loadView`来创建.
-
----
-
 - 什么时候用`assign`:
     - 基础类型 (简单类型，原子类型): `NSInteger`, `CGPoint`, `CGFloat`
     - C数据类型: `int`, `float`, `double`, `char`等
@@ -150,10 +195,25 @@ viewDidUnload
 
 ---
 
+**一个好的视图模型不应该引用视图本身。**
+
+---
+
 对于直接从xib或者storyboard拉出来生成的`IBOutlet`属性，是选择`strong`还是`weak`呢？
 
 - 如果该控件位于控件树的顶部，比如 `UIViewController下的view`，那就应该选择`strong`，因为`viewController`直接拥有该`view`。
 - 如果控件是`viewController`中`view`的子视图，对于这个子视图，它的所有者是它的父视图，代码中只是想引用一下这个子视图的指针而已，那么就应该选择`weak`.
+
+---
+
+几种实现定时任务的比较:
+
+方法来源 | 使用
+---- | ----
+NSObject中的方法 | 适合延时执行任务，可以在子线程，也可回到主线程刷新UI。在子线程中延时时，必须自己创建Runloop
+NSTimer | 一般延时和周期性任务都可以使用，在子线程中使用时，必须自己创建Runloop。使用比较简单，存在循环引用的风险
+CADisplayLink | 适合重复重绘界面，其频率和屏幕刷新固有频率相同
+GCD中的方法 | 可以代替NSTimer，使用比较简单。API是C语言格式的，一些读者可能不习惯
 
 ---
 
@@ -306,6 +366,43 @@ OC单一继承；
 
 ---
 
+xib内设圆角头像：
+```objective-c
+.layer.masksToBounds = YES;
+.layer.cornerRadius = 50;
+```
+设边框：
+```objective-c
+.layer.borderWidth = 5;
+.layer.borderColor = [[UIColor whiteColor] CGColor];
+```
+
+---
+
+UIProgressView更改高度 :
+```objective-c
+progressView.transform = CGAffineTransformMakeScale(1.0f, 3.0f);
+```
+
+---
+
+判断设备上是否安装微信/QQ/微博 :
+```objective-c
+[[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"mqq://"]]
+[[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"weixin://"]]
+[[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"weibo://"]]
+```
+基于ShareSDK :
+```objective-c
+#import <ShareSDK/ShareSDK.h>
+#import "WXApi.h"
+#import <TencentOpenAPI/QQApi.h>
+[WXApi isWXAppInstalled]
+[QQApi isQQInstalled]
+```
+
+---
+
 `UIApplication`是单例模式，一个应用程序只有一个`UIApplication`对象或子对象；
 
 ---
@@ -343,7 +440,7 @@ Xcode 创建此类，作为设置 `Application` 模板的一部分。应用程�
 
 ---
 
-委托是一种简单而强大的模式。在此模式中，应用程序中的一个对象代表另一个对象，或与另一个对象协调工作。授权对象保留对另一个对象（委托对象）的引用，并适时向委托对象发送信息。该信息会告诉事件的委托对象，授权对象即将处理或刚处理了某个事件。委托对象可能会对该信息作出如下响应：更新其本身或应用程序中其他对象的外观或状态，在某些情况下，它会返回一个值来反映待处理的事件该如何处理。
+**委托**是一种简单而强大的模式。在此模式中，应用程序中的一个对象代表另一个对象，或与另一个对象协调工作。授权对象保留对另一个对象（委托对象）的引用，并适时向委托对象发送信息。该信息会告诉事件的委托对象，授权对象即将处理或刚处理了某个事件。委托对象可能会对该信息作出如下响应：更新其本身或应用程序中其他对象的外观或状态，在某些情况下，它会返回一个值来反映待处理的事件该如何处理。
 
 ---
 
@@ -426,20 +523,20 @@ Xcode 创建此类，作为设置 `Application` 模板的一部分。应用程�
 
 ---
 
-![Image of Learning iOS](/images/Learned_route_of_iOS.jpg)
+![Image of Learning iOS](./images/Learned_route_of_iOS.jpg)
 
 ---
 
 所有的Mac OS X和iOS程序都是由大量的对象构成，而这些对象的根对象都是`NSObject`，`NSObject`就处在`Foundation`框架之中，具体的类结构如下：
 
-![Image of Foundation 1](/images/iOS_Foundation_class_structure_1.jpg)
+![Image of Foundation 1](./images/iOS_Foundation_class_structure_1.jpg)
 
-![Image of Foundation 2](/images/iOS_Foundation_class_structure_2.jpg)
+![Image of Foundation 2](./images/iOS_Foundation_class_structure_2.jpg)
 
-![Image of Foundation 3](/images/iOS_Foundation_class_structure_3.jpg)
+![Image of Foundation 3](./images/iOS_Foundation_class_structure_3.jpg)
 
 ---
 
 `UIKit`主要用于界面构架，它的类结构：
 
-![Image of UIKit](/images/iOS_UIKit_class_structure.jpg)
+![Image of UIKit](./images/iOS_UIKit_class_structure.jpg)
