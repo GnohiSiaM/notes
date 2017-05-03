@@ -68,7 +68,7 @@ layer.contents = (__bridge id)image.CGImage;
 
 `CGAffineTransform`中的 **“仿射” 的意思是无论变换矩阵用什么值，图层中平行的两条线在变换之后任然保持平行**。
 `CGAffineTransform`是一个可以和二维空间向量(如`CGPoint`)做乘法的 3X2 的矩阵:
-![Image of 3x2_Matrix](./images/3x2_Matrix.jpeg)
+![Image of 3X2_Matrix](./images/3X2_Matrix.jpeg)
 
 如下几个函数都创建了一个`CGAffineTransform`实例：
 ```swift
@@ -92,8 +92,8 @@ CGAffineTransformConcat(CGAffineTransform t1, CGAffineTransform t2);
 
 **当按顺序做了变换，上一个变换的结果将会影响之后的变换**。
 
-`CALayer`同样有一个`transform`属性，但它的类型是`CATransform3D`和`CGAffineTransform`类似，`CATransform3D`也是一个矩阵，但是和 2x3 的矩阵不同，`CATransform3D`是一个可以在3维空间内做变换的 4x4 的矩阵:
-![Image of 4x4_Matrix](./images/4x4_Matrix.jpeg)
+`CALayer`同样有一个`transform`属性，但它的类型是`CATransform3D`和`CGAffineTransform`类似，`CATransform3D`也是一个矩阵，但是和 2x3 的矩阵不同，`CATransform3D`是一个可以在3维空间内做变换的 4X4 的矩阵:
+![Image of 4X4_Matrix](./images/4X4_Matrix.jpeg)
 
 Core Animation提供了一系列的方法用来创建和组合CATransform3D类型的矩阵:
 ```swift
